@@ -63,6 +63,7 @@ type NetworkConfig struct {
 		Subnet        string `json:"subnet,omitempty"`
 		Address       string `json:"ipAddress,omitempty"`
 		QueryInterval string `json:"queryInterval,omitempty"`
+		MASFilePath   string `json:"masFilePath,omitempty"`
 	}
 	DNS            cniTypes.DNS  `json:"dns"`
 	RuntimeConfig  RuntimeConfig `json:"runtimeConfig"`

@@ -44,6 +44,9 @@ const (
 	OptIpamQueryInterval      = "ipam-query-interval"
 	OptIpamQueryIntervalAlias = "i"
 
+	// IPAM MAS file path
+	OptIpamMASFilePath = "ipam-mas-file-path"
+
 	// Don't Start CNM
 	OptStopAzureVnet      = "stop-azure-cnm"
 	OptStopAzureVnetAlias = "stopcnm"

@@ -115,6 +115,10 @@ func (plugin *ipamPlugin) Configure(stdinData []byte) (*cni.NetworkConfig, error
 		plugin.SetOption(common.OptIpamQueryInterval, i)
 	}
 
+	if nwCfg.Ipam.MASFilePath != "" {
+		plugin.SetOption(common.OptIpamMASFilePath, nwCfg.Ipam.MASFilePath)
+	}
+
 	err = plugin.am.StartSource(plugin.Options)
 	if err != nil {
 		return nil, err
