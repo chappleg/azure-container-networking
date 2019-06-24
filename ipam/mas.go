@@ -27,9 +27,12 @@ type masSource struct {
 }
 
 // MAS host agent JSON object format.
+type NetworkInterfaces struct {
+	Interfaces []Interface
+}
+
 type Interface struct {
 	MacAddress string
-	Name       string
 	IsPrimary  bool
 	IPSubnets  []IPSubent
 }
@@ -112,14 +115,14 @@ func (source *masSource) refresh() error {
 	return nil
 }
 
-func getSDNInterfaces(fileLocation string) ([]Interface, error) {
+func getSDNInterfaces(fileLocation string) (*NetworkInterfaces, error) {
 	data, err := ioutil.ReadFile(fileLocation)
 	if err != nil {
 		return nil, err
 	}
 
-	var interfaces []Interface
-	err = json.Unmarshal(data, &interfaces)
+	interfaces := &NetworkInterfaces{}
+	err = json.Unmarshal(data, interfaces)
 	if err != nil {
 		return nil, err
 	}
@@ -127,14 +130,14 @@ func getSDNInterfaces(fileLocation string) ([]Interface, error) {
 	return interfaces, nil
 }
 
-func populateAddressSpace(localAddressSpace *addressSpace, sdnInterfaces []Interface, localInterfaces []net.Interface) error {
+func populateAddressSpace(localAddressSpace *addressSpace, sdnInterfaces *NetworkInterfaces, localInterfaces []net.Interface) error {
 
 	//Find the interface with matching MacAddress or Name
-	for _, sdnIf := range sdnInterfaces {
+	for _, sdnIf := range sdnInterfaces.Interfaces {
 		ifName := ""
 
 		for _, localIf := range localInterfaces {
-			if (sdnIf.MacAddress == "" && sdnIf.Name == localIf.Name) || macAddressesEqual(sdnIf.MacAddress, localIf.HardwareAddr.String()) {
+			if macAddressesEqual(sdnIf.MacAddress, localIf.HardwareAddr.String()) {
 				ifName = localIf.Name
 				break
 			}
@@ -142,7 +145,7 @@ func populateAddressSpace(localAddressSpace *addressSpace, sdnInterfaces []Inter
 
 		// Skip if interface is not found.
 		if ifName == "" {
-			log.Printf("[ipam] Failed to find interface with MAC address:%v or Name:%v.", sdnIf.MacAddress, sdnIf.Name)
+			log.Printf("[ipam] Failed to find interface with MAC address:%v", sdnIf.MacAddress)
 			continue
 		}
 

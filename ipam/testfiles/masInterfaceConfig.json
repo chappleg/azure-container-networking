@@ -1,48 +1,31 @@
-[
-  {
-    "Name": "eth0",
-    "IsPrimary": false,
-    "IPSubnets": [
-      {
-        "Prefix": "10.240.0.0/12",
-        "IPAddresses": [
-          {
-            "Address": "10.240.0.4",
-            "IsPrimary": true
-          },
-          {
-            "Address": "10.240.0.5",
-            "IsPrimary": false
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "MacAddress": "000D3A6E1825",
-    "IsPrimary": true,
-    "IPSubnets": [
-      {
-        "Prefix": "1.0.0.0/12",
-        "IPAddresses": [
-          {
-            "Address": "1.0.0.4",
-            "IsPrimary": true
-          },
-          {
-            "Address": "1.0.0.5",
-            "IsPrimary": false
-          },
-          {
-            "Address": "1.0.0.6",
-            "IsPrimary": false
-          },
-          {
-            "Address": "1.0.0.7",
-            "IsPrimary": false
-          }
-        ]
-      }
-    ]
-  }
-]
+{
+  "Interfaces": [
+    {
+      "MacAddress": "000D3A6E1825",
+      "IsPrimary": true,
+      "IPSubnets": [
+        {
+          "Prefix": "1.0.0.0/12",
+          "IPAddresses": [
+            {
+              "Address": "1.0.0.4",
+              "IsPrimary": true
+            },
+            {
+              "Address": "1.0.0.5",
+              "IsPrimary": false
+            },
+            {
+              "Address": "1.0.0.6",
+              "IsPrimary": false
+            },
+            {
+              "Address": "1.0.0.7",
+              "IsPrimary": false
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

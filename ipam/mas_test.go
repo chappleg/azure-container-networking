@@ -35,31 +35,20 @@ func TestGetSDNInterfaces(t *testing.T) {
 		t.Fatalf("failed to get sdn Interfaces from file: %v", err)
 	}
 
-	correctInterfaces := []Interface{
-		{
-			Name:      "eth0",
-			IsPrimary: false,
-			IPSubnets: []IPSubent{
-				{
-					Prefix: "10.240.0.0/12",
-					IPAddresses: []IPAddress{
-						{Address: "10.240.0.4", IsPrimary: true},
-						{Address: "10.240.0.5", IsPrimary: false},
-					},
-				},
-			},
-		},
-		{
-			MacAddress: "000D3A6E1825",
-			IsPrimary:  true,
-			IPSubnets: []IPSubent{
-				{
-					Prefix: "1.0.0.0/12",
-					IPAddresses: []IPAddress{
-						{Address: "1.0.0.4", IsPrimary: true},
-						{Address: "1.0.0.5", IsPrimary: false},
-						{Address: "1.0.0.6", IsPrimary: false},
-						{Address: "1.0.0.7", IsPrimary: false},
+	correctInterfaces := &NetworkInterfaces{
+		Interfaces: []Interface{
+			{
+				MacAddress: "000D3A6E1825",
+				IsPrimary:  true,
+				IPSubnets: []IPSubent{
+					{
+						Prefix: "1.0.0.0/12",
+						IPAddresses: []IPAddress{
+							{Address: "1.0.0.4", IsPrimary: true},
+							{Address: "1.0.0.5", IsPrimary: false},
+							{Address: "1.0.0.6", IsPrimary: false},
+							{Address: "1.0.0.7", IsPrimary: false},
+						},
 					},
 				},
 			},
@@ -86,29 +75,33 @@ func TestPopulateAddressSpace(t *testing.T) {
 	hardwareAddress, _ := net.ParseMAC("00:0d:3a:6e:18:25")
 	localInterfaces := []net.Interface{{HardwareAddr: hardwareAddress, Name: "eth0"}}
 
-	// Interfaces should match based on Mac Address
+	local := &addressSpace{
+		Id:    LocalDefaultAddressSpaceId,
+		Scope: LocalScope,
+		Pools: make(map[string]*addressPool),
+	}
 
-	local := newLocalAddressSpace()
-
-	sdnInterfaces := []Interface{
-		{
-			MacAddress: "000D3A6E1825",
-			IsPrimary:  true,
-			IPSubnets: []IPSubent{
-				{
-					Prefix: "1.0.0.0/12",
-					IPAddresses: []IPAddress{
-						{Address: "1.1.1.5", IsPrimary: true},
-						{Address: "1.1.1.6", IsPrimary: false},
-						{Address: "1.1.1.6", IsPrimary: false},
-						{Address: "invalid", IsPrimary: false},
+	sdnInterfaces := &NetworkInterfaces{
+		Interfaces: []Interface{
+			{
+				MacAddress: "000D3A6E1825",
+				IsPrimary:  true,
+				IPSubnets: []IPSubent{
+					{
+						Prefix: "1.0.0.0/12",
+						IPAddresses: []IPAddress{
+							{Address: "1.1.1.5", IsPrimary: true},
+							{Address: "1.1.1.6", IsPrimary: false},
+							{Address: "1.1.1.6", IsPrimary: false},
+							{Address: "invalid", IsPrimary: false},
+						},
 					},
-				},
-				{
-					Prefix: "1.0.0.0/12",
-				},
-				{
-					Prefix: "invalid",
+					{
+						Prefix: "1.0.0.0/12",
+					},
+					{
+						Prefix: "invalid",
+					},
 				},
 			},
 		},
@@ -143,69 +136,5 @@ func TestPopulateAddressSpace(t *testing.T) {
 	_, ok = pool.Addresses["1.1.1.6"]
 	if !ok {
 		t.Fatal("Address 1.1.1.6 missing")
-	}
-
-	// Interfaces should match based on Name when no Mac Address Present
-
-	local = newLocalAddressSpace()
-
-	sdnInterfaces = []Interface{
-		{
-			Name:      localInterfaces[0].Name,
-			IsPrimary: false,
-			IPSubnets: []IPSubent{{Prefix: "2.0.0.0/12"}},
-		},
-	}
-
-	err = populateAddressSpace(local, sdnInterfaces, localInterfaces)
-	if err != nil {
-		t.Fatalf("Error populating address space: %v", err)
-	}
-
-	if len(local.Pools) != 1 {
-		t.Fatalf("Pool list has incorrect length. expected: %d, actual: %d", 1, len(local.Pools))
-	}
-
-	pool, ok = local.Pools["2.0.0.0/12"]
-	if !ok {
-		t.Fatal("Address pool 2.0.0.0/12 missing")
-	}
-
-	if pool.IfName != localInterfaces[0].Name {
-		t.Fatalf("Incorrect interface name. expected: %s, actual %s", localInterfaces[0].Name, pool.IfName)
-	}
-
-	if pool.Priority != 1 {
-		t.Fatalf("Incorrect interface priority. expected: %d, actual %d", 1, pool.Priority)
-	}
-
-	// Interfaces should not match based on Name when Mac Address is Present
-
-	local = newLocalAddressSpace()
-
-	sdnInterfaces = []Interface{
-		{
-			MacAddress: "invalid",
-			Name:       localInterfaces[0].Name,
-			IsPrimary:  false,
-			IPSubnets:  []IPSubent{{Prefix: "2.0.0.0/12"}},
-		},
-	}
-
-	err = populateAddressSpace(local, sdnInterfaces, localInterfaces)
-	if err != nil {
-		t.Fatalf("Error populating address space: %v", err)
-	}
-
-	if len(local.Pools) != 0 {
-		t.Fatalf("Pool list has incorrect length. expected: %d, actual: %d", 0, len(local.Pools))
-	}
-}
-
-func newLocalAddressSpace() *addressSpace {
-	return &addressSpace{
-		Id:    LocalDefaultAddressSpaceId,
-		Scope: LocalScope,
-		Pools: make(map[string]*addressPool),
 	}
 }
