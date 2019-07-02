@@ -11,17 +11,17 @@ func TestNewMasSource(t *testing.T) {
 	options := make(map[string]interface{})
 	mas, _ := newMasSource(options)
 
-	if runtime.GOOS == "windows" {
+	if runtime.GOOS == windows {
 		if mas.filePath != defaultWindowsFilePath {
-			t.Errorf("default file path set incorrectly")
+			t.Fatalf("default file path set incorrectly")
 		}
 	} else {
 		if mas.filePath != defaultLinuxFilePath {
-			t.Errorf("default file path set incorrectly")
+			t.Fatalf("default file path set incorrectly")
 		}
 	}
 	if mas.name != "MAS" {
-		t.Errorf("mas source Name incorrect")
+		t.Fatalf("mas source Name incorrect")
 	}
 }
 
@@ -40,7 +40,7 @@ func TestGetSDNInterfaces(t *testing.T) {
 			{
 				MacAddress: "000D3A6E1825",
 				IsPrimary:  true,
-				IPSubnets: []IPSubent{
+				IPSubnets: []IPSubnet{
 					{
 						Prefix: "1.0.0.0/12",
 						IPAddresses: []IPAddress{
@@ -86,13 +86,14 @@ func TestPopulateAddressSpace(t *testing.T) {
 			{
 				MacAddress: "000D3A6E1825",
 				IsPrimary:  true,
-				IPSubnets: []IPSubent{
+				IPSubnets: []IPSubnet{
 					{
 						Prefix: "1.0.0.0/12",
 						IPAddresses: []IPAddress{
 							{Address: "1.1.1.5", IsPrimary: true},
 							{Address: "1.1.1.6", IsPrimary: false},
 							{Address: "1.1.1.6", IsPrimary: false},
+							{Address: "1.1.1.7", IsPrimary: false},
 							{Address: "invalid", IsPrimary: false},
 						},
 					},
@@ -129,12 +130,17 @@ func TestPopulateAddressSpace(t *testing.T) {
 		t.Fatalf("Incorrect interface priority. expected: %d, actual %d", 0, pool.Priority)
 	}
 
-	if len(pool.Addresses) != 1 {
-		t.Fatalf("Address list has incorrect length. expected: %d, actual: %d", 1, len(pool.Addresses))
+	if len(pool.Addresses) != 2 {
+		t.Fatalf("Address list has incorrect length. expected: %d, actual: %d", 2, len(pool.Addresses))
 	}
 
 	_, ok = pool.Addresses["1.1.1.6"]
 	if !ok {
 		t.Fatal("Address 1.1.1.6 missing")
+	}
+
+	_, ok = pool.Addresses["1.1.1.7"]
+	if !ok {
+		t.Fatal("Address 1.1.1.7 missing")
 	}
 }

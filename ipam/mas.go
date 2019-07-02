@@ -14,8 +14,10 @@ import (
 )
 
 const (
-	defaultLinuxFilePath = "/etc/kubernetes/interfaces.json"
+	defaultLinuxFilePath   = "/etc/kubernetes/interfaces.json"
 	defaultWindowsFilePath = `c:\k\interfaces.json`
+	windows                = "windows"
+	name                   = "MAS"
 )
 
 // Microsoft Azure Stack IPAM configuration source.
@@ -34,10 +36,10 @@ type NetworkInterfaces struct {
 type Interface struct {
 	MacAddress string
 	IsPrimary  bool
-	IPSubnets  []IPSubent
+	IPSubnets  []IPSubnet
 }
 
-type IPSubent struct {
+type IPSubnet struct {
 	Prefix      string
 	IPAddresses []IPAddress
 }
@@ -50,14 +52,14 @@ type IPAddress struct {
 // Creates the MAS source.
 func newMasSource(options map[string]interface{}) (*masSource, error) {
 	var filePath string
-	if runtime.GOOS == "windows" {
+	if runtime.GOOS == windows {
 		filePath = defaultWindowsFilePath
 	} else {
 		filePath = defaultLinuxFilePath
 	}
 
 	return &masSource{
-		name: "MAS",
+		name: name,
 		filePath: filePath,
 	}, nil
 }
@@ -71,12 +73,10 @@ func (source *masSource) start(sink addressConfigSink) error {
 // Stops the MAS source.
 func (source *masSource) stop() {
 	source.sink = nil
-	return
 }
 
 // Refreshes configuration.
 func (source *masSource) refresh() error {
-
 	if source.fileLoaded {
 		return nil
 	}
@@ -99,16 +99,16 @@ func (source *masSource) refresh() error {
 		return err
 	}
 
-	err = populateAddressSpace(local, sdnInterfaces, localInterfaces)
-	if err != nil {
+	if err = populateAddressSpace(local, sdnInterfaces, localInterfaces); err != nil {
 		return err
 	}
 
 	// Set the local address space as active.
-	err = source.sink.setAddressSpace(local)
-	if err != nil {
+	if err = source.sink.setAddressSpace(local); err != nil {
 		return err
 	}
+
+	log.Printf("[ipam] Address space successfully populated from config file")
 
 	source.fileLoaded = true
 
@@ -122,8 +122,7 @@ func getSDNInterfaces(fileLocation string) (*NetworkInterfaces, error) {
 	}
 
 	interfaces := &NetworkInterfaces{}
-	err = json.Unmarshal(data, interfaces)
-	if err != nil {
+	if err = json.Unmarshal(data, interfaces); err != nil {
 		return nil, err
 	}
 
@@ -131,7 +130,6 @@ func getSDNInterfaces(fileLocation string) (*NetworkInterfaces, error) {
 }
 
 func populateAddressSpace(localAddressSpace *addressSpace, sdnInterfaces *NetworkInterfaces, localInterfaces []net.Interface) error {
-
 	//Find the interface with matching MacAddress or Name
 	for _, sdnIf := range sdnInterfaces.Interfaces {
 		ifName := ""
