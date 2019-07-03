@@ -5,6 +5,7 @@ package ipam
 
 import (
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"net"
 	"runtime"
@@ -77,6 +78,10 @@ func (source *masSource) stop() {
 
 // Refreshes configuration.
 func (source *masSource) refresh() error {
+	if source == nil {
+		return errors.New("masSource is nil")
+	}
+
 	if source.fileLoaded {
 		return nil
 	}
