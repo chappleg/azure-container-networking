@@ -114,7 +114,6 @@ func (source *masSource) refresh() error {
 	}
 
 	log.Printf("[ipam] Address space successfully populated from config file")
-
 	source.fileLoaded = true
 
 	return nil
