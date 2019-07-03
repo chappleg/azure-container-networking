@@ -71,9 +71,15 @@ func TestGetSDNInterfaces(t *testing.T) {
 }
 
 func TestPopulateAddressSpace(t *testing.T) {
+	hardwareAddress0, _ := net.ParseMAC("00:00:00:00:00:00")
+	hardwareAddress1, _ := net.ParseMAC("11:11:11:11:11:11")
+	hardwareAddress2, _ := net.ParseMAC("00:0d:3a:6e:18:25")
 
-	hardwareAddress, _ := net.ParseMAC("00:0d:3a:6e:18:25")
-	localInterfaces := []net.Interface{{HardwareAddr: hardwareAddress, Name: "eth0"}}
+	localInterfaces := []net.Interface{
+		{HardwareAddr: hardwareAddress0, Name: "eth0"},
+		{HardwareAddr: hardwareAddress1, Name: "eth1"},
+		{HardwareAddr: hardwareAddress2, Name: "eth2"},
+	}
 
 	local := &addressSpace{
 		Id:    LocalDefaultAddressSpaceId,
@@ -97,12 +103,6 @@ func TestPopulateAddressSpace(t *testing.T) {
 							{Address: "invalid", IsPrimary: false},
 						},
 					},
-					{
-						Prefix: "1.0.0.0/12",
-					},
-					{
-						Prefix: "invalid",
-					},
 				},
 			},
 		},
@@ -122,8 +122,8 @@ func TestPopulateAddressSpace(t *testing.T) {
 		t.Fatal("Address pool 1.0.0.0/12 missing")
 	}
 
-	if pool.IfName != localInterfaces[0].Name {
-		t.Fatalf("Incorrect interface name. expected: %s, actual %s", localInterfaces[0].Name, pool.IfName)
+	if pool.IfName != "eth2" {
+		t.Fatalf("Incorrect interface name. expected: %s, actual %s", "eth2", pool.IfName)
 	}
 
 	if pool.Priority != 0 {
@@ -142,5 +142,125 @@ func TestPopulateAddressSpace(t *testing.T) {
 	_, ok = pool.Addresses["1.1.1.7"]
 	if !ok {
 		t.Fatal("Address 1.1.1.7 missing")
+	}
+}
+
+func TestPopulateAddressSpaceMultipleSDNInterfaces(t *testing.T) {
+	hardwareAddress0, _ := net.ParseMAC("00:00:00:00:00:00")
+	hardwareAddress1, _ := net.ParseMAC("11:11:11:11:11:11")
+	localInterfaces := []net.Interface{
+		{HardwareAddr: hardwareAddress0, Name: "eth0"},
+		{HardwareAddr: hardwareAddress1, Name: "eth1"},
+	}
+
+	local := &addressSpace{
+		Id:    LocalDefaultAddressSpaceId,
+		Scope: LocalScope,
+		Pools: make(map[string]*addressPool),
+	}
+
+	sdnInterfaces := &NetworkInterfaces{
+		Interfaces: []Interface{
+			{
+				MacAddress: "000000000000",
+				IsPrimary:  true,
+				IPSubnets: []IPSubnet{
+					{
+						Prefix: "0.0.0.0/24",
+						IPAddresses: []IPAddress{},
+					},
+					{
+						Prefix: "0.1.0.0/24",
+						IPAddresses: []IPAddress{},
+					},
+					{
+						Prefix: "0.0.0.0/24",
+					},
+					{
+						Prefix: "invalid",
+					},
+				},
+			},
+			{
+				MacAddress: "111111111111",
+				IsPrimary: false,
+				IPSubnets: []IPSubnet{
+					{
+						Prefix: "1.0.0.0/24",
+						IPAddresses: []IPAddress{},
+					},
+					{
+						Prefix: "1.1.0.0/24",
+						IPAddresses: []IPAddress{},
+					},
+				},
+			},
+			{
+				MacAddress: "222222222222",
+				IsPrimary: false,
+				IPSubnets: []IPSubnet{},
+			},
+		},
+	}
+
+	err := populateAddressSpace(local, sdnInterfaces, localInterfaces)
+	if err != nil {
+		t.Fatalf("Error populating address space: %v", err)
+	}
+
+	if len(local.Pools) != 4 {
+		t.Fatalf("Pool list has incorrect length. expected: %d, actual: %d", 4, len(local.Pools))
+	}
+
+	pool, ok := local.Pools["0.0.0.0/24"]
+	if !ok {
+		t.Fatal("Address pool 0.0.0.0/24 missing")
+	}
+
+	if pool.IfName != "eth0" {
+		t.Fatalf("Incorrect interface name. expected: %s, actual %s", "eth0", pool.IfName)
+	}
+
+	if pool.Priority != 0 {
+		t.Fatalf("Incorrect interface priority. expected: %d, actual %d", 0, pool.Priority)
+	}
+
+	pool, ok = local.Pools["0.1.0.0/24"]
+	if !ok {
+		t.Fatal("Address pool 0.1.0.0/24 missing")
+	}
+
+	if pool.IfName != "eth0" {
+		t.Fatalf("Incorrect interface name. expected: %s, actual %s", "eth0", pool.IfName)
+	}
+
+	if pool.Priority != 0 {
+		t.Fatalf("Incorrect interface priority. expected: %d, actual %d", 0, pool.Priority)
+	}
+
+	pool, ok = local.Pools["1.0.0.0/24"]
+	if !ok {
+		t.Fatal("Address pool 1.0.0.0/24 missing")
+	}
+
+	if pool.IfName != "eth1" {
+		t.Fatalf("Incorrect interface name. expected: %s, actual %s", "eth1", pool.IfName)
+	}
+
+	if pool.Priority != 1 {
+		t.Fatalf("Incorrect interface priority. expected: %d, actual %d", 1, pool.Priority)
+	}
+
+	pool, ok = local.Pools["1.1.0.0/24"]
+	if !ok {
+		t.Fatal("Address pool 1.1.0.0/24 missing")
+	}
+
+	if pool.IfName != "eth1" {
+		t.Fatalf("Incorrect interface name. expected: %s, actual %s", "eth1", pool.IfName)
+	}
+
+	if pool.Priority != 1 {
+		t.Fatalf("Incorrect interface priority. expected: %d, actual %d", 1, pool.Priority)
 	}
 }
